@@ -1,0 +1,8 @@
+{
+  "comment_1": "Enter here the number of images you want in the dataset",
+  "dataset_size": 15000,
+  "comment_2": "dpsnr / dssim / mse",
+  "model_type": "dpsnr",
+  "comment_3": "Enter here the token @BotFather gave you",
+  "bot_token": ""
+}
