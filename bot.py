@@ -33,7 +33,7 @@ dp = aiogram.Dispatcher(aiogram.Bot(config['bot_token']))
 
 del config
 
-user_requests = {}  # user_id: [file_name, opencv_image]
+user_requests = {}  # user_id: [file_name, opencv_image, response_message]
 NoneType = type(None)
 
 
@@ -156,6 +156,7 @@ async def response(message: aiogram.types.Message):
         user_requests[message.from_user.id] = [
             f'processing/{message.from_user.id}/'
             f'{os.path.splitext(message.document.file_name)[0]}.png',
+            None,
             None
         ]
 
@@ -171,7 +172,7 @@ async def response(message: aiogram.types.Message):
                 await message.answer(
                     'The file is too large!\n'
                     '\n'
-                    "<i>The weight mustn't be more than 15 MB.</i>",
+                    "<i>Weight mustn't be more than 15 MB.</i>",
                     aiogram.types.ParseMode.HTML
                 )
 
@@ -213,7 +214,7 @@ async def response(message: aiogram.types.Message):
                 await message.answer(
                     'The photo is too large!\n'
                     '\n'
-                    "<i>The size mustn't be more than 1080x1080 px.</i>",
+                    "<i>Size mustn't be more than 1080x1080 px.</i>",
                     aiogram.types.ParseMode.HTML
                 )
 
@@ -229,7 +230,7 @@ async def response(message: aiogram.types.Message):
                 await message.answer(
                     'The photo is too long!\n'
                     '\n'
-                    "<i>The height mustn't be more than 1080 px.</i>",
+                    "<i>Height mustn't be more than 1080 px.</i>",
                     aiogram.types.ParseMode.HTML
                 )
 
@@ -245,13 +246,24 @@ async def response(message: aiogram.types.Message):
                 await message.answer(
                     'The photo is too wide!\n'
                     '\n'
-                    "<i>The weight mustn't be more than 1080 px.</i>",
+                    "<i>Width mustn't be more than 1080 px.</i>",
                     aiogram.types.ParseMode.HTML
                 )
 
         else:
+            if message.from_user.language_code in ('ru', 'uk', 'be'):
+                user_requests[message.from_user.id][2] = await message.answer(
+                    'Запрос принят на обработку!'
+                )
+            else:
+                user_requests[message.from_user.id][2] = await message.answer(
+                    'The request accepted for processing!'
+                )
+
             cv.imwrite(user_requests[message.from_user.id][0],
                        upscale(user_requests[message.from_user.id][1]))
+
+            await user_requests[message.from_user.id][2].delete()
 
             await message.answer_document(open(user_requests[message.from_user.id][0], 'rb'))
 
@@ -273,6 +285,7 @@ async def response(message: aiogram.types.Message):
 
         user_requests[message.from_user.id] = [
             f'processing/{message.from_user.id}/Result.png',
+            None,
             None
         ]
 
@@ -292,7 +305,7 @@ async def response(message: aiogram.types.Message):
                 await message.answer(
                     'The photo is too large!\n'
                     '\n'
-                    "<i>The size mustn't be more than 1080x1080 px.</i>",
+                    "<i>Size mustn't be more than 1080x1080 px.</i>",
                     aiogram.types.ParseMode.HTML
                 )
 
@@ -308,7 +321,7 @@ async def response(message: aiogram.types.Message):
                 await message.answer(
                     'The photo is too long!\n'
                     '\n'
-                    "<i>The height mustn't be more than 1080 px.</i>",
+                    "<i>Height mustn't be more than 1080 px.</i>",
                     aiogram.types.ParseMode.HTML
                 )
 
@@ -324,13 +337,24 @@ async def response(message: aiogram.types.Message):
                 await message.answer(
                     'The photo is too wide!\n'
                     '\n'
-                    "<i>The weight mustn't be more than 1080 px.</i>",
+                    "<i>Width mustn't be more than 1080 px.</i>",
                     aiogram.types.ParseMode.HTML
                 )
 
         else:
+            if message.from_user.language_code in ('ru', 'uk', 'be'):
+                user_requests[message.from_user.id][2] = await message.answer(
+                    'Запрос принят на обработку!'
+                )
+            else:
+                user_requests[message.from_user.id][2] = await message.answer(
+                    'The request accepted for processing!'
+                )
+
             cv.imwrite(user_requests[message.from_user.id][0],
                        upscale(user_requests[message.from_user.id][1]))
+
+            await user_requests[message.from_user.id][2].delete()
 
             if message.from_user.language_code in ('ru', 'uk', 'be'):
                 await message.answer_document(
