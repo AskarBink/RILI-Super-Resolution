@@ -37,63 +37,71 @@ user_requests = {}  # user_id: [file_name, opencv_image, response_message]
 NoneType = type(None)
 
 
-def predict(image):
-    ycrcb = cv.cvtColor(image, cv.COLOR_BGR2YCrCb)
-
-    y = ycrcb[:, :, 0]
-    cr = ycrcb[:, :, 1]
-    cb = ycrcb[:, :, 2]
-
+def predict(y):
     y = y.astype(np.float32) / 255
     y = np.expand_dims(y, (0, -1))
 
-    y = model.predict(y)
-    y = y[0] * 255
-    y[y < 0] = 0
-    y[y > 255] = 255
-    y = y.astype(np.uint8)
+    result = [[None] * ((y.shape[2] - 1) // 270 + 1) for i in range((y.shape[1] - 1) // 270 + 1)]
 
-    cr = cv.resize(cr, (y.shape[0], y.shape[1]), interpolation=cv.INTER_CUBIC)
-    cr = np.expand_dims(cr, -1)
+    for i in range(1, len(result)):
+        for j in range(1, len(result[0])):
+            result[i - 1][j - 1] = model.predict(
+                y[:, 270 * (i - 1): 270 * i, 270 * (j - 1): 270 * j]
+            )[0]
 
-    cb = cv.resize(cb, (y.shape[0], y.shape[1]), interpolation=cv.INTER_CUBIC)
-    cb = np.expand_dims(cb, -1)
+    for i in range(1, len(result)):
+        result[i - 1][-1] = model.predict(
+            y[:, 270 * (i - 1): 270 * i, 270 * (len(result[0]) - 1):]
+        )[0]
 
-    ycrcb = np.concatenate((y, cr, cb), 2)
-    return cv.cvtColor(ycrcb, cv.COLOR_YCrCb2BGR)
+    for j in range(1, len(result[0])):
+        result[-1][j - 1] = model.predict(
+            y[:, 270 * (len(result) - 1):, 270 * (j - 1): 270 * j]
+        )[0]
+
+    result[-1][-1] = model.predict(
+        y[:, 270 * (len(result) - 1):, 270 * (len(result[0]) - 1):]
+    )[0]
+
+    result = np.vstack(tuple(map(np.hstack, result)))
+    result *= 255
+    result = result.clip(0, 255)
+    result = result.astype(np.uint8)
+
+    return result
 
 
 def upscale(image):
-    if image.shape[0] < image.shape[1]:
-        result = predict(image[:, :image.shape[0], :])
+    height, width, channels = image.shape
 
-        for i in range(image.shape[0], image.shape[1] - image.shape[0], image.shape[0]):
-            result = np.hstack((result, predict(image[:, i: i + image.shape[0], :])))
+    alpha = None
+    if channels == 4:
+        alpha = image[:, :, 3]
+        image = cv.cvtColor(image, cv.COLOR_BGRA2BGR)
+        alpha = cv.resize(alpha, (4 * width, 4 * height), interpolation=cv.INTER_CUBIC)
 
-        try:
-            return np.hstack((
-                result,
-                predict(image[:, -image.shape[0]:, :])[:, -4 * (image.shape[1] % image.shape[0]):, :]
-            ))
-        except:
-            return result
+    image = cv.cvtColor(image, cv.COLOR_BGR2YCrCb)
 
-    elif image.shape[0] > image.shape[1]:
-        result = predict(image[:image.shape[1], :, :])
+    y = image[:, :, 0]
+    cr = image[:, :, 1]
+    cb = image[:, :, 2]
 
-        for i in range(image.shape[1], image.shape[0] - image.shape[1], image.shape[1]):
-            result = np.vstack((result, predict(image[i: i + image.shape[1], :, :])))
+    y = predict(y)
 
-        try:
-            return np.vstack((
-                result,
-                predict(image[-image.shape[1]:, :, :])[-4 * (image.shape[0] % image.shape[1]):, :, :]
-            ))
-        except:
-            return result
+    cr = cv.resize(cr, (4 * width, 4 * height), interpolation=cv.INTER_CUBIC)
+    cr = np.expand_dims(cr, -1)
 
-    else:
-        return predict(image)
+    cb = cv.resize(cb, (4 * width, 4 * height), interpolation=cv.INTER_CUBIC)
+    cb = np.expand_dims(cb, -1)
+
+    image = np.concatenate((y, cr, cb), 2)
+    image = cv.cvtColor(image, cv.COLOR_YCrCb2BGR)
+
+    if alpha is not None:
+        image = cv.cvtColor(image, cv.COLOR_BGR2BGRA)
+        image[:, :, 3] = alpha
+
+    return image
 
 
 @dp.message_handler(commands='start')
@@ -160,19 +168,19 @@ async def response(message: aiogram.types.Message):
             None
         ]
 
-        if message.document.file_size > 15_728_640:
+        if message.document.file_size > 31_457_280:
             if message.from_user.language_code in ('ru', 'uk', 'be'):
                 await message.answer(
                     'Файл слишком большой!\n'
                     '\n'
-                    '<i>Вес должен быть не больше 15 МБ.</i>',
+                    '<i>Вес должен быть не больше 30 МБ.</i>',
                     aiogram.types.ParseMode.HTML
                 )
             else:
                 await message.answer(
                     'The file is too large!\n'
                     '\n'
-                    "<i>Weight mustn't be more than 15 MB.</i>",
+                    "<i>Weight mustn't be more than 30 MB.</i>",
                     aiogram.types.ParseMode.HTML
                 )
 
@@ -187,7 +195,8 @@ async def response(message: aiogram.types.Message):
             return
 
         await message.document.download(user_requests[message.from_user.id][0])
-        user_requests[message.from_user.id][1] = cv.imread(user_requests[message.from_user.id][0])
+        user_requests[message.from_user.id][1] = cv.imread(user_requests[message.from_user.id][0],
+                                                           cv.IMREAD_UNCHANGED)
 
         if isinstance(user_requests[message.from_user.id][1], NoneType):
             if message.from_user.language_code in ('ru', 'uk', 'be'):
@@ -201,52 +210,21 @@ async def response(message: aiogram.types.Message):
                     'Please check the file and its name.'
                 )
 
-        elif user_requests[message.from_user.id][1].shape[0] > 1080 and \
-                user_requests[message.from_user.id][1].shape[1] > 1080:
+        elif 10_000_000 < \
+                user_requests[message.from_user.id][1].shape[0] * \
+                user_requests[message.from_user.id][1].shape[1]:
             if message.from_user.language_code in ('ru', 'uk', 'be'):
                 await message.answer(
                     'Фотография слишком большая!\n'
                     '\n'
-                    '<i>Размер должен быть не больше 1080x1080 пикс.</i>',
+                    '<i>Размер должен быть не больше 10 МП.</i>',
                     aiogram.types.ParseMode.HTML
                 )
             else:
                 await message.answer(
                     'The photo is too large!\n'
                     '\n'
-                    "<i>Size mustn't be more than 1080x1080 px.</i>",
-                    aiogram.types.ParseMode.HTML
-                )
-
-        elif user_requests[message.from_user.id][1].shape[0] > 1080:
-            if message.from_user.language_code in ('ru', 'uk', 'be'):
-                await message.answer(
-                    'Фотография слишком длинная!\n'
-                    '\n'
-                    '<i>Высота должна быть не больше 1080 пикс.</i>',
-                    aiogram.types.ParseMode.HTML
-                )
-            else:
-                await message.answer(
-                    'The photo is too long!\n'
-                    '\n'
-                    "<i>Height mustn't be more than 1080 px.</i>",
-                    aiogram.types.ParseMode.HTML
-                )
-
-        elif user_requests[message.from_user.id][1].shape[1] > 1080:
-            if message.from_user.language_code in ('ru', 'uk', 'be'):
-                await message.answer(
-                    'Фотография слишком широкая!\n'
-                    '\n'
-                    '<i>Ширина должна быть не больше 1080 пикс.</i>',
-                    aiogram.types.ParseMode.HTML
-                )
-            else:
-                await message.answer(
-                    'The photo is too wide!\n'
-                    '\n'
-                    "<i>Width mustn't be more than 1080 px.</i>",
+                    "<i>Size mustn't be more than 10 MP.</i>",
                     aiogram.types.ParseMode.HTML
                 )
 
@@ -290,54 +268,24 @@ async def response(message: aiogram.types.Message):
         ]
 
         await message.photo[-1].download(user_requests[message.from_user.id][0])
-        user_requests[message.from_user.id][1] = cv.imread(user_requests[message.from_user.id][0])
+        user_requests[message.from_user.id][1] = cv.imread(user_requests[message.from_user.id][0],
+                                                           cv.IMREAD_UNCHANGED)
 
-        if user_requests[message.from_user.id][1].shape[0] > 1080 and \
-                user_requests[message.from_user.id][1].shape[1] > 1080:
+        if 10_000_000 < \
+                user_requests[message.from_user.id][1].shape[0] * \
+                user_requests[message.from_user.id][1].shape[1]:
             if message.from_user.language_code in ('ru', 'uk', 'be'):
                 await message.answer(
                     'Фотография слишком большая!\n'
                     '\n'
-                    '<i>Размер должен быть не больше 1080x1080 пикс.</i>',
+                    '<i>Размер должен быть не больше 10 МП.</i>',
                     aiogram.types.ParseMode.HTML
                 )
             else:
                 await message.answer(
                     'The photo is too large!\n'
                     '\n'
-                    "<i>Size mustn't be more than 1080x1080 px.</i>",
-                    aiogram.types.ParseMode.HTML
-                )
-
-        elif user_requests[message.from_user.id][1].shape[0] > 1080:
-            if message.from_user.language_code in ('ru', 'uk', 'be'):
-                await message.answer(
-                    'Фотография слишком длинная!\n'
-                    '\n'
-                    '<i>Высота должна быть не больше 1080 пикс.</i>',
-                    aiogram.types.ParseMode.HTML
-                )
-            else:
-                await message.answer(
-                    'The photo is too long!\n'
-                    '\n'
-                    "<i>Height mustn't be more than 1080 px.</i>",
-                    aiogram.types.ParseMode.HTML
-                )
-
-        elif user_requests[message.from_user.id][1].shape[1] > 1080:
-            if message.from_user.language_code in ('ru', 'uk', 'be'):
-                await message.answer(
-                    'Фотография слишком широкая!\n'
-                    '\n'
-                    '<i>Ширина должна быть не больше 1080 пикс.</i>',
-                    aiogram.types.ParseMode.HTML
-                )
-            else:
-                await message.answer(
-                    'The photo is too wide!\n'
-                    '\n'
-                    "<i>Width mustn't be more than 1080 px.</i>",
+                    "<i>Size mustn't be more than 10 MP.</i>",
                     aiogram.types.ParseMode.HTML
                 )
 
