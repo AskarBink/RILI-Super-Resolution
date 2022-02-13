@@ -168,19 +168,19 @@ async def response(message: aiogram.types.Message):
             None
         ]
 
-        if message.document.file_size > 10_485_760:
+        if message.document.file_size > 20_971_520:
             if message.from_user.language_code in ('ru', 'uk', 'be'):
                 await message.answer(
                     'Файл слишком большой!\n'
                     '\n'
-                    '<i>Вес должен быть не больше 10 МБ.</i>',
+                    '<i>Вес должен быть не больше 20 МБ.</i>',
                     aiogram.types.ParseMode.HTML
                 )
             else:
                 await message.answer(
                     'The file is too large!\n'
                     '\n'
-                    "<i>Weight mustn't be more than 10 MB.</i>",
+                    "<i>Weight mustn't be more than 20 MB.</i>",
                     aiogram.types.ParseMode.HTML
                 )
 
@@ -210,21 +210,21 @@ async def response(message: aiogram.types.Message):
                     'Please check the file and its name.'
                 )
 
-        elif 2_500_000 < \
+        elif 2_000_000 < \
                 user_requests[message.from_user.id][1].shape[0] * \
                 user_requests[message.from_user.id][1].shape[1]:
             if message.from_user.language_code in ('ru', 'uk', 'be'):
                 await message.answer(
                     'Фотография слишком большая!\n'
                     '\n'
-                    '<i>Размер должен быть не больше 2,5 МП.</i>',
+                    '<i>Размер должен быть не больше 2 МП.</i>',
                     aiogram.types.ParseMode.HTML
                 )
             else:
                 await message.answer(
                     'The photo is too large!\n'
                     '\n'
-                    "<i>Size mustn't be more than 2.5 MP.</i>",
+                    "<i>Size mustn't be more than 2 MP.</i>",
                     aiogram.types.ParseMode.HTML
                 )
 
@@ -241,9 +241,22 @@ async def response(message: aiogram.types.Message):
             cv.imwrite(user_requests[message.from_user.id][0],
                        upscale(user_requests[message.from_user.id][1]))
 
-            await user_requests[message.from_user.id][2].delete()
+            if os.path.getsize(user_requests[message.from_user.id][0]) < 52_428_800:
+                await message.answer_document(open(user_requests[message.from_user.id][0], 'rb'))
 
-            await message.answer_document(open(user_requests[message.from_user.id][0], 'rb'))
+            else:
+                if message.from_user.language_code in ('ru', 'uk', 'be'):
+                    await message.answer(
+                        'Упс! Произошла ошибка...\n'
+                        'Не получилось вместиться в ограничения.'
+                    )
+                else:
+                    await message.answer(
+                        'Oops! An error has occurred...\n'
+                        "Couldn't fit within the limits."
+                    )
+
+            await user_requests[message.from_user.id][2].delete()
 
         shutil.rmtree(f'processing/{message.from_user.id}')
         user_requests.pop(message.from_user.id)
@@ -271,21 +284,21 @@ async def response(message: aiogram.types.Message):
         user_requests[message.from_user.id][1] = cv.imread(user_requests[message.from_user.id][0],
                                                            cv.IMREAD_UNCHANGED)
 
-        if 2_500_000 < \
+        if 2_000_000 < \
                 user_requests[message.from_user.id][1].shape[0] * \
                 user_requests[message.from_user.id][1].shape[1]:
             if message.from_user.language_code in ('ru', 'uk', 'be'):
                 await message.answer(
                     'Фотография слишком большая!\n'
                     '\n'
-                    '<i>Размер должен быть не больше 2,5 МП.</i>',
+                    '<i>Размер должен быть не больше 2 МП.</i>',
                     aiogram.types.ParseMode.HTML
                 )
             else:
                 await message.answer(
                     'The photo is too large!\n'
                     '\n'
-                    "<i>Size mustn't be more than 2.5 MP.</i>",
+                    "<i>Size mustn't be more than 2 MP.</i>",
                     aiogram.types.ParseMode.HTML
                 )
 
@@ -302,18 +315,31 @@ async def response(message: aiogram.types.Message):
             cv.imwrite(user_requests[message.from_user.id][0],
                        upscale(user_requests[message.from_user.id][1]))
 
-            await user_requests[message.from_user.id][2].delete()
+            if os.path.getsize(user_requests[message.from_user.id][0]) < 52_428_800:
+                if message.from_user.language_code in ('ru', 'uk', 'be'):
+                    await message.answer_document(
+                        open(user_requests[message.from_user.id][0], 'rb'),
+                        caption='Лучше в следующий раз отправь в виде документа.'
+                    )
+                else:
+                    await message.answer_document(
+                        open(user_requests[message.from_user.id][0], 'rb'),
+                        caption='Better at the next time send as a document.'
+                    )
 
-            if message.from_user.language_code in ('ru', 'uk', 'be'):
-                await message.answer_document(
-                    open(user_requests[message.from_user.id][0], 'rb'),
-                    caption='Лучше в следующий раз отправь в виде документа.'
-                )
             else:
-                await message.answer_document(
-                    open(user_requests[message.from_user.id][0], 'rb'),
-                    caption='Better at the next time send as a document.'
-                )
+                if message.from_user.language_code in ('ru', 'uk', 'be'):
+                    await message.answer(
+                        'Упс! Произошла ошибка...\n'
+                        'Не получилось вместиться в ограничения.'
+                    )
+                else:
+                    await message.answer(
+                        'Oops! An error has occurred...\n'
+                        "Couldn't fit within the limits."
+                    )
+
+            await user_requests[message.from_user.id][2].delete()
 
         shutil.rmtree(f'processing/{message.from_user.id}')
         user_requests.pop(message.from_user.id)
