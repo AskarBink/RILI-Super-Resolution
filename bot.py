@@ -238,22 +238,38 @@ async def response(message: aiogram.types.Message):
                     'The request accepted for processing!'
                 )
 
-            cv.imwrite(user_requests[message.from_user.id][0],
-                       upscale(user_requests[message.from_user.id][1]))
+            user_requests[message.from_user.id][1] = upscale(user_requests[message.from_user.id][1])
+            cv.imwrite(
+                user_requests[message.from_user.id][0],
+                user_requests[message.from_user.id][1]
+            )
 
             if os.path.getsize(user_requests[message.from_user.id][0]) < 52_428_800:
-                await message.answer_document(open(user_requests[message.from_user.id][0], 'rb'))
+                await message.answer_document(
+                    open(user_requests[message.from_user.id][0], 'rb')
+                )
 
             else:
+                cv.imwrite(
+                    user_requests[message.from_user.id][0],
+                    cv.resize(
+                        user_requests[message.from_user.id][1],
+                        (
+                            user_requests[message.from_user.id][1].shape[1] // 2,
+                            user_requests[message.from_user.id][1].shape[0] // 2
+                        )
+                    )
+                )
+
                 if message.from_user.language_code in ('ru', 'uk', 'be'):
-                    await message.answer(
-                        'Упс! Произошла ошибка...\n'
-                        'Не получилось вместиться в ограничения.'
+                    await message.answer_document(
+                        open(user_requests[message.from_user.id][0], 'rb'),
+                        caption='Из-за ограничений получилось увеличить лишь частично...'
                     )
                 else:
-                    await message.answer(
-                        'Oops! An error has occurred...\n'
-                        "Couldn't fit within the limits."
+                    await message.answer_document(
+                        open(user_requests[message.from_user.id][0], 'rb'),
+                        caption='Due to the limits, it was possible to upscale only partially...'
                     )
 
             await user_requests[message.from_user.id][2].delete()
@@ -312,8 +328,11 @@ async def response(message: aiogram.types.Message):
                     'The request accepted for processing!'
                 )
 
-            cv.imwrite(user_requests[message.from_user.id][0],
-                       upscale(user_requests[message.from_user.id][1]))
+            user_requests[message.from_user.id][1] = upscale(user_requests[message.from_user.id][1])
+            cv.imwrite(
+                user_requests[message.from_user.id][0],
+                user_requests[message.from_user.id][1]
+            )
 
             if os.path.getsize(user_requests[message.from_user.id][0]) < 52_428_800:
                 if message.from_user.language_code in ('ru', 'uk', 'be'):
@@ -328,15 +347,30 @@ async def response(message: aiogram.types.Message):
                     )
 
             else:
+                cv.imwrite(
+                    user_requests[message.from_user.id][0],
+                    cv.resize(
+                        user_requests[message.from_user.id][1],
+                        (
+                            user_requests[message.from_user.id][1].shape[1] // 2,
+                            user_requests[message.from_user.id][1].shape[0] // 2
+                        )
+                    )
+                )
+
                 if message.from_user.language_code in ('ru', 'uk', 'be'):
-                    await message.answer(
-                        'Упс! Произошла ошибка...\n'
-                        'Не получилось вместиться в ограничения.'
+                    await message.answer_document(
+                        open(user_requests[message.from_user.id][0], 'rb'),
+                        caption='Из-за ограничений получилось увеличить лишь частично...\n'
+                                '\n'
+                                'Лучше в следующий раз отправь в виде документа.'
                     )
                 else:
-                    await message.answer(
-                        'Oops! An error has occurred...\n'
-                        "Couldn't fit within the limits."
+                    await message.answer_document(
+                        open(user_requests[message.from_user.id][0], 'rb'),
+                        caption='Due to the limits, it was possible to upscale only partially...\n'
+                                '\n'
+                                'Better at the next time send as a document.'
                     )
 
             await user_requests[message.from_user.id][2].delete()
