@@ -168,19 +168,19 @@ async def response(message: aiogram.types.Message):
             None
         ]
 
-        if message.document.file_size > 31_457_280:
+        if message.document.file_size > 10_485_760:
             if message.from_user.language_code in ('ru', 'uk', 'be'):
                 await message.answer(
                     'Файл слишком большой!\n'
                     '\n'
-                    '<i>Вес должен быть не больше 30 МБ.</i>',
+                    '<i>Вес должен быть не больше 10 МБ.</i>',
                     aiogram.types.ParseMode.HTML
                 )
             else:
                 await message.answer(
                     'The file is too large!\n'
                     '\n'
-                    "<i>Weight mustn't be more than 30 MB.</i>",
+                    "<i>Weight mustn't be more than 10 MB.</i>",
                     aiogram.types.ParseMode.HTML
                 )
 
@@ -210,21 +210,21 @@ async def response(message: aiogram.types.Message):
                     'Please check the file and its name.'
                 )
 
-        elif 10_000_000 < \
+        elif 2_500_000 < \
                 user_requests[message.from_user.id][1].shape[0] * \
                 user_requests[message.from_user.id][1].shape[1]:
             if message.from_user.language_code in ('ru', 'uk', 'be'):
                 await message.answer(
                     'Фотография слишком большая!\n'
                     '\n'
-                    '<i>Размер должен быть не больше 10 МП.</i>',
+                    '<i>Размер должен быть не больше 2,5 МП.</i>',
                     aiogram.types.ParseMode.HTML
                 )
             else:
                 await message.answer(
                     'The photo is too large!\n'
                     '\n'
-                    "<i>Size mustn't be more than 10 MP.</i>",
+                    "<i>Size mustn't be more than 2.5 MP.</i>",
                     aiogram.types.ParseMode.HTML
                 )
 
@@ -271,21 +271,21 @@ async def response(message: aiogram.types.Message):
         user_requests[message.from_user.id][1] = cv.imread(user_requests[message.from_user.id][0],
                                                            cv.IMREAD_UNCHANGED)
 
-        if 10_000_000 < \
+        if 2_500_000 < \
                 user_requests[message.from_user.id][1].shape[0] * \
                 user_requests[message.from_user.id][1].shape[1]:
             if message.from_user.language_code in ('ru', 'uk', 'be'):
                 await message.answer(
                     'Фотография слишком большая!\n'
                     '\n'
-                    '<i>Размер должен быть не больше 10 МП.</i>',
+                    '<i>Размер должен быть не больше 2,5 МП.</i>',
                     aiogram.types.ParseMode.HTML
                 )
             else:
                 await message.answer(
                     'The photo is too large!\n'
                     '\n'
-                    "<i>Size mustn't be more than 10 MP.</i>",
+                    "<i>Size mustn't be more than 2.5 MP.</i>",
                     aiogram.types.ParseMode.HTML
                 )
 
