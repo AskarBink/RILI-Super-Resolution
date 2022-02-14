@@ -1,4 +1,5 @@
 import json
+import math
 import os
 import shutil
 
@@ -12,7 +13,8 @@ with open('config.json') as config_file:
 
 if config['model_type'] == 'dpsnr':
     def dpsnr(y_true, y_pred):
-        return 108.79928 - tf.image.psnr(y_true, y_pred, 1)
+        return 10 * math.log10(65025 * y_true.shape[0] * y_true.shape[1]) \
+               - tf.image.psnr(y_true, y_pred, 1)
 
 
     with tf.keras.utils.custom_object_scope({'dpsnr': dpsnr}):
