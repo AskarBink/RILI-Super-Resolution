@@ -3,7 +3,6 @@
 # ESPCN Super Resolution
 
 ![](https://i.imgur.com/TDZMhOx.png)
-
 -
 
 ###### Make sure you have Python installed (preferably 3.9) and got all the packages from *requirements.txt*.
