@@ -1,4 +1,6 @@
-###### Askar Arslanov's school project. Republican Engineering Boarding Lyceum, Russia.
+###### Republican Engineering Boarding Lyceum, Russia.
+###### Askar Arslanov's school project.
+###### Mentors: Bulat Nasyrov, Vadim Nigmatullin.
 
 # ESPCN Super Resolution
 
