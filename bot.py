@@ -74,6 +74,9 @@ def predict(y):
 
 
 def upscale(image):
+    if len(image.shape) == 2:
+        image = cv.cvtColor(image, cv.COLOR_GRAY2BGR)
+
     height, width, channels = image.shape
 
     alpha = None
