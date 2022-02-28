@@ -240,7 +240,7 @@ async def response(message: aiogram.types.Message):
                 )
             else:
                 user_requests[message.from_user.id][2] = await message.answer(
-                    'The request accepted for processing!'
+                    'The request has been accepted for processing!'
                 )
 
             user_requests[message.from_user.id][1] = upscale(user_requests[message.from_user.id][1])
@@ -330,7 +330,7 @@ async def response(message: aiogram.types.Message):
                 )
             else:
                 user_requests[message.from_user.id][2] = await message.answer(
-                    'The request accepted for processing!'
+                    'The request has been accepted for processing!'
                 )
 
             user_requests[message.from_user.id][1] = upscale(user_requests[message.from_user.id][1])
@@ -373,7 +373,7 @@ async def response(message: aiogram.types.Message):
                 else:
                     await message.answer_document(
                         open(user_requests[message.from_user.id][0], 'rb'),
-                        caption='Due to the limits, it was possible to upscale only partially...\n'
+                        caption='Due to the limits, it has been possible to upscale only partially...\n'
                                 '\n'
                                 'Better at the next time send as a document.'
                     )
